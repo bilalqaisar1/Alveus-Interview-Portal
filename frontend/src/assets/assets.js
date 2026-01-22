@@ -22,7 +22,7 @@ import data_scince from "./intelligence.png";
 import left_arrow_icon from "./left_arrow_icon.svg";
 import location_icon from "./location_icon.svg";
 import lock_icon from "./lock_icon.svg";
-import logo from "./logo.svg";
+import logo from "./logo-normal.png";
 import microsoft_logo from "./microsoft_logo.svg";
 import money_icon from "./money_icon.svg";
 import person_icon from "./person_icon.svg";

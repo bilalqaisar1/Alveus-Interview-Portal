@@ -16,7 +16,7 @@ const FeaturedJob = () => {
       {/* ✅ Changed from mt-26 to valid Tailwind class */}
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold text-gray-700 mb-2">Featured Jobs</h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
+        <p className="text-gray-600 max-w-2xl mx-auto text-lg">
           Know your worth and find the job that qualifies your life
         </p>
       </div>

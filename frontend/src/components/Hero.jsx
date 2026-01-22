@@ -44,7 +44,7 @@ const Hero = () => {
 
         {/* Subtext */}
         <motion.p
-          className="text-gray-600 mb-10"
+          className="text-gray-600 mb-10 text-xl"
           variants={SlideUp(0.4)}
           initial="hidden"
           animate="visible"

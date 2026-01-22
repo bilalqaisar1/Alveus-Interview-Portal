@@ -19,7 +19,7 @@ const Footer = () => {
             |
           </span>
           <p className="text-gray-600 text-sm sm:text-base text-center sm:text-left">
-            Copyright ❤️‍🔥Rohan❤️‍🔥 | All rights reserved.
+            Copyright © 2025 | All rights reserved.
           </p>
         </div>
 

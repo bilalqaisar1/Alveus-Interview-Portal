@@ -5,6 +5,8 @@ import { AppContext } from "../context/AppContext";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { LoaderCircle } from "lucide-react";
+import LocationSelector from "../components/LocationSelector";
+import { formatLocation, DEFAULT_COUNTRY } from "../utils/locationUtils";
 
 const AddJob = () => {
   const editorRef = useRef(null);
@@ -13,16 +15,25 @@ const AddJob = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Programming");
-  const [location, setLocation] = useState("Dhaka");
   const [level, setLevel] = useState("Intermediate");
   const [salary, setSalary] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // Location state
+  const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY);
+  const [countryName, setCountryName] = useState("Bangladesh");
+  const [stateCode, setStateCode] = useState("");
+  const [stateName, setStateName] = useState("");
+  const [city, setCity] = useState("");
 
   const { backendUrl, companyToken } = useContext(AppContext);
 
   const postJob = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    // Create formatted location string for backward compatibility
+    const location = formatLocation(city, stateName, countryName);
 
     try {
       const { data } = await axios.post(
@@ -32,6 +43,12 @@ const AddJob = () => {
           description,
           category,
           location,
+          // Also send structured location data
+          country: countryName,
+          countryCode,
+          state: stateName,
+          stateCode,
+          city: city || stateName, // Use state name if no city selected
           level,
           salary,
         },
@@ -45,7 +62,11 @@ const AddJob = () => {
         setTitle("");
         setDescription("");
         setCategory("Programming");
-        setLocation("Dhaka");
+        setCountryCode(DEFAULT_COUNTRY);
+        setCountryName("Bangladesh");
+        setStateCode("");
+        setStateName("");
+        setCity("");
         setLevel("Intermediate");
         setSalary(null);
 
@@ -79,6 +100,20 @@ const AddJob = () => {
   useEffect(() => {
     document.title = "Superio - Job Portal | Dashboard";
   }, []);
+
+  const handleCountryChange = (code, name) => {
+    setCountryCode(code);
+    setCountryName(name);
+  };
+
+  const handleStateChange = (code, name) => {
+    setStateCode(code);
+    setStateName(name);
+  };
+
+  const handleCityChange = (cityName) => {
+    setCity(cityName);
+  };
 
   return (
     <section className="mr-1 mb-6">
@@ -136,27 +171,6 @@ const AddJob = () => {
             </select>
           </div>
 
-          {/* Job Location */}
-          <div>
-            <label className="block text-gray-800 text-lg font-semibold mb-3 pb-1 border-b border-gray-200">
-              Job Location
-            </label>
-            <select
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="Dhaka">Dhaka</option>
-              <option value="Rangpur">Rangpur</option>
-              <option value="Barishal">Barishal</option>
-              <option value="Khulna">Khulna</option>
-              <option value="Mymensingh">Mymensingh</option>
-              <option value="Rajshahi">Rajshahi</option>
-              <option value="Sylhet">Sylhet</option>
-              <option value="Remote">Remote</option>
-            </select>
-          </div>
-
           {/* Job Level */}
           <div>
             <label className="block text-gray-800 text-lg font-semibold mb-3 pb-1 border-b border-gray-200">
@@ -189,13 +203,40 @@ const AddJob = () => {
           </div>
         </div>
 
+        {/* Job Location Section */}
+        <div className="mb-8">
+          <label className="block text-gray-800 text-lg font-semibold mb-3 pb-1 border-b border-gray-200">
+            Job Location
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <LocationSelector
+              selectedCountry={countryCode}
+              selectedState={stateCode}
+              selectedCity={city}
+              onCountryChange={handleCountryChange}
+              onStateChange={handleStateChange}
+              onCityChange={handleCityChange}
+              showLabels={true}
+              required={true}
+            />
+          </div>
+          {/* Location Preview */}
+          {(countryName || stateName || city) && (
+            <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <span className="text-sm text-gray-600">Location Preview: </span>
+              <span className="text-sm font-medium text-blue-700">
+                {formatLocation(city, stateName, countryName)}
+              </span>
+            </div>
+          )}
+        </div>
+
         {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}
-          className={`w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-8 font-semibold rounded ${
-            loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-          }`}
+          className={`w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-8 font-semibold rounded ${loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+            }`}
         >
           {loading ? (
             <LoaderCircle className="animate-spin h-5 w-5 mx-auto" />
@@ -209,3 +250,4 @@ const AddJob = () => {
 };
 
 export default AddJob;
+

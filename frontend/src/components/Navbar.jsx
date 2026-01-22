@@ -7,30 +7,53 @@ import {
   Upload,
   UserRound,
   X,
+  Settings,
+  Bell,
 } from "lucide-react";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { AppContext } from "../context/AppContext";
+import NotificationDropdown from "./NotificationDropdown";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
-  const { isLogin, userData, userDataLoading, fetchUserData, setIsLogin } =
-    useContext(AppContext);
+  const notificationRef = useRef(null);
+  const {
+    isLogin, isCompanyLogin, userData, companyData, userDataLoading, companyLoading,
+    fetchUserData, setIsLogin, unreadCount, backendUrl,
+    setUserToken, setCompanyToken, setIsCompanyLogin
+  } = useContext(AppContext);
   const location = useLocation();
 
   const navigate = useNavigate();
 
-  const menu = [
+  // Different menu items for candidates vs recruiters
+  const candidateMenu = [
     { name: "Home", path: "/" },
     { name: "All Jobs", path: "/all-jobs/all" },
+    { name: "Feed", path: "/feed" },
+    { name: "AI Interview", path: "/ai-interview" },
+    { name: "AI Assistant", path: "/ai-assistant" },
     { name: "About", path: "/about" },
-    { name: "Terms", path: "/terms" },
   ];
+
+  const recruiterMenu = [
+    { name: "Home", path: "/" },
+    { name: "Manage Jobs", path: "/dashboard/manage-jobs" },
+    { name: "View Applications", path: "/dashboard/view-applications" },
+    { name: "Feed", path: "/feed" },
+    { name: "AI Assistant", path: "/ai-assistant" },
+  ];
+
+  const menu = isCompanyLogin ? recruiterMenu : candidateMenu;
+  const activeData = isCompanyLogin ? companyData : userData;
+  const isLoading = isCompanyLogin ? companyLoading : userDataLoading;
 
   const toggleMenu = () => {
     setIsMobileMenuOpen((prev) => !prev);
@@ -47,6 +70,13 @@ const Navbar = () => {
         !profileMenuRef.current.contains(event.target)
       ) {
         setIsProfileMenuOpen(false);
+      }
+
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setIsNotificationOpen(false);
       }
 
       if (
@@ -68,14 +98,25 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    toast.success("Logout successfully");
-    navigate("/candidate-login");
-    setIsLogin(false);
+    if (isCompanyLogin) {
+      setCompanyToken(null);
+      setIsCompanyLogin(false);
+      localStorage.removeItem("companyToken");
+      toast.success("Logout successfully");
+      navigate("/recruiter-login");
+    } else {
+      setUserToken(null);
+      setIsLogin(false);
+      localStorage.removeItem("userToken");
+      toast.success("Logout successfully");
+      navigate("/candidate-login");
+    }
   };
+
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsProfileMenuOpen(false);
+    setIsNotificationOpen(false);
   }, [location.pathname]);
 
   return (
@@ -83,7 +124,7 @@ const Navbar = () => {
       <nav>
         <div className="h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img className="w-[120px]" src={assets.logo} alt="Lecruiter Logo" />
+            <img className="w-[120px]" src={assets.logo} alt="Alveous Co. Logo" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -93,10 +134,9 @@ const Navbar = () => {
                 <NavLink
                   to={item.path}
                   className={({ isActive }) =>
-                    `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive
-                        ? "text-blue-600 bg-blue-50"
-                        : "text-gray-600 hover:text-blue-500 hover:bg-blue-50"
+                    `px-3 py-2 rounded-md text-lg font-medium transition-colors ${isActive
+                      ? "text-blue-600 bg-blue-50"
+                      : "text-gray-600 hover:text-blue-500 hover:bg-blue-50"
                     }`
                   }
                 >
@@ -107,58 +147,100 @@ const Navbar = () => {
           </ul>
 
           {/* Desktop Buttons */}
-          {userDataLoading ? (
+          {isLoading ? (
             <LoaderCircle className="animate-spin text-gray-600 hidden lg:block" />
-          ) : isLogin ? (
-            <div
-              className="hidden lg:flex items-center gap-4 relative"
-              ref={profileMenuRef}
-            >
-              <button
-                onClick={toggleProfileMenu}
-                className="flex items-center gap-2 focus:outline-none"
-                aria-expanded={isProfileMenuOpen}
+          ) : (isLogin || isCompanyLogin) ? (
+            <div className="hidden lg:flex items-center gap-4">
+              {/* Notification Bell */}
+              <div className="relative" ref={notificationRef}>
+                <button
+                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors relative"
+                >
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 h-4 w-4 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+                <NotificationDropdown
+                  isOpen={isNotificationOpen}
+                  onClose={() => setIsNotificationOpen(false)}
+                />
+              </div>
+
+              <div
+                className="relative"
+                ref={profileMenuRef}
               >
-                <span className="text-sm font-medium text-gray-700">
-                  Hi, {userData?.name || "User"}
-                </span>
-                <img
-                  className="w-8 h-8 rounded-full object-cover"
-                  src={userData?.image || assets.avatarPlaceholder}
-                  alt="User profile"
-                  onError={(e) => {
-                    e.currentTarget.src = assets.avatarPlaceholder;
-                  }}
-                />
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform ${
-                    isProfileMenuOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+                <button
+                  onClick={toggleProfileMenu}
+                  className="flex items-center gap-2 focus:outline-none"
+                  aria-expanded={isProfileMenuOpen}
+                >
+                  <span className="text-sm font-medium text-gray-700">
+                    Hi, {activeData?.name || "User"}
+                  </span>
+                  <img
+                    className="w-8 h-8 rounded-full object-cover"
+                    src={
+                      activeData?.image
+                        ? activeData.image.startsWith("http")
+                          ? activeData.image
+                          : `${backendUrl}${activeData.image}`
+                        : assets.avatarPlaceholder
+                    }
+                    alt="Profile"
+                    onError={(e) => {
+                      e.currentTarget.src = assets.avatarPlaceholder;
+                    }}
+                  />
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform ${isProfileMenuOpen ? "rotate-180" : ""
+                      }`}
+                  />
+                </button>
 
-              {isProfileMenuOpen && (
-                <div className="absolute right-0 top-12 mt-2 w-56 origin-top-right rounded-md border border-gray-200 bg-white z-50 overflow-hidden">
-                  <div>
-                    <Link
-                      to="/applications"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
-                    >
-                      <Briefcase size={16} />
-                      Applied Jobs
-                    </Link>
+                {isProfileMenuOpen && (
+                  <div className="absolute right-0 top-12 mt-2 w-56 origin-top-right rounded-md border border-gray-200 bg-white z-50 overflow-hidden">
+                    <div>
+                      <Link
+                        to={isCompanyLogin ? "/dashboard/settings" : "/user-settings"}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
+                      >
+                        <Settings size={16} />
+                        Settings
+                      </Link>
+                      <Link
+                        to={`/profile/${activeData?._id}`}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
+                      >
+                        <UserRound size={16} />
+                        My Profile
+                      </Link>
+                      {!isCompanyLogin && (
+                        <Link
+                          to="/applications"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
+                        >
+                          <Briefcase size={16} />
+                          Applied Jobs
+                        </Link>
+                      )}
 
-                    <button
-                      className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
-                      onClick={handleLogout}
-                    >
-                      <LogOut size={16} />
-                      Logout
-                    </button>
+                      <button
+                        className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
+                        onClick={handleLogout}
+                      >
+                        <LogOut size={16} />
+                        Logout
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ) : (
             <div className="hidden lg:flex items-center gap-3">
@@ -191,9 +273,8 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       <div
-        className={`lg:hidden fixed inset-0 z-40 transform transition-transform duration-300 ease-in-out ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`lg:hidden fixed inset-0 z-40 transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
         ref={mobileMenuRef}
       >
         <div className="fixed inset-0 backdrop-blur-sm" onClick={toggleMenu} />
@@ -219,10 +300,9 @@ const Navbar = () => {
                     to={item.path}
                     onClick={toggleMenu}
                     className={({ isActive }) =>
-                      `block px-3 py-2 rounded-md text-sm font-medium ${
-                        isActive
-                          ? "bg-blue-50 text-blue-600"
-                          : "text-gray-700 hover:bg-gray-100"
+                      `block px-3 py-2 rounded-md text-lg font-medium ${isActive
+                        ? "bg-blue-50 text-blue-600"
+                        : "text-gray-700 hover:bg-gray-100"
                       }`
                     }
                   >
@@ -232,37 +312,65 @@ const Navbar = () => {
               ))}
             </ul>
 
-            {userDataLoading ? (
+            {isLoading ? (
               <LoaderCircle className="animate-spin text-gray-600 hidden lg:block" />
-            ) : isLogin ? (
+            ) : (isLogin || isCompanyLogin) ? (
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="flex items-center gap-3 mb-4">
                   <img
                     className="w-10 h-10 rounded-full object-cover"
-                    src={userData?.image || assets.avatarPlaceholder}
-                    alt="User profile"
+                    src={
+                      activeData?.image
+                        ? activeData.image.startsWith("http")
+                          ? activeData.image
+                          : `${backendUrl}${activeData.image}`
+                        : assets.avatarPlaceholder
+                    }
+                    alt="Profile"
                     onError={(e) => {
                       e.currentTarget.src = assets.avatarPlaceholder;
                     }}
                   />
                   <div>
                     <p className="text-sm font-medium text-gray-900">
-                      {userData?.name || "User"}
+                      {activeData?.name || "User"}
                     </p>
-                    <p className="text-xs text-gray-500">{userData?.email}</p>
+                    <p className="text-xs text-gray-500">{activeData?.email}</p>
                   </div>
                 </div>
                 <ul className="space-y-1">
                   <li>
                     <Link
-                      to="/applied-jobs"
+                      to={isCompanyLogin ? "/dashboard/settings" : "/user-settings"}
                       onClick={toggleMenu}
                       className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
                     >
-                      <Briefcase size={16} />
-                      Applied Jobs
+                      <Settings size={16} />
+                      Settings
                     </Link>
                   </li>
+                  <li>
+                    <Link
+                      to={`/profile/${activeData?._id}`}
+                      onClick={toggleMenu}
+                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                      <UserRound size={16} />
+                      My Profile
+                    </Link>
+                  </li>
+                  {!isCompanyLogin && (
+                    <li>
+                      <Link
+                        to="/applications"
+                        onClick={toggleMenu}
+                        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                      >
+                        <Briefcase size={16} />
+                        Applied Jobs
+                      </Link>
+                    </li>
+                  )}
                   <li>
                     <button
                       onClick={handleLogout}

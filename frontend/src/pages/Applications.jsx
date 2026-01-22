@@ -5,7 +5,7 @@ import { assets } from "../assets/assets";
 import moment from "moment";
 import { AppContext } from "../context/AppContext";
 import Loader from "../components/Loader";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, Video, ExternalLink } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
@@ -23,6 +23,20 @@ const Applications = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [resumeFile, setResumeFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [interviews, setInterviews] = useState([]);
+
+  const fetchInterviews = async () => {
+    try {
+      const { data } = await axios.get(`${backendUrl}/interview/my-interviews`, {
+        headers: { token: userToken },
+      });
+      if (data.success) {
+        setInterviews(data.interviews);
+      }
+    } catch (error) {
+      console.error("Error fetching interviews:", error);
+    }
+  };
 
   const handleResumeSave = async () => {
     if (!resumeFile) {
@@ -63,7 +77,10 @@ const Applications = () => {
 
   useEffect(() => {
     fetchUserApplication();
-  }, []);
+    if (userToken) {
+      fetchInterviews();
+    }
+  }, [userToken]);
 
   return (
     <>
@@ -95,11 +112,10 @@ const Applications = () => {
                 <button
                   disabled={!resumeFile || loading}
                   onClick={handleResumeSave}
-                  className={`flex items-center gap-2 rounded px-3 py-1.5 text-sm transition-colors border border-gray-200  ${
-                    !resumeFile || loading
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-blue-100 text-blue-500 hover:bg-blue-200 cursor-pointer"
-                  }`}
+                  className={`flex items-center gap-2 rounded px-3 py-1.5 text-sm transition-colors border border-gray-200  ${!resumeFile || loading
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-blue-100 text-blue-500 hover:bg-blue-200 cursor-pointer"
+                    }`}
                 >
                   {loading ? (
                     <>
@@ -167,52 +183,82 @@ const Applications = () => {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Interview
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {[...userApplication].reverse().map((job) => (
-                      <tr key={job._id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4">
-                          <div className="flex items-center">
-                            <img
-                              src={
-                                job?.companyId?.image || assets.default_profile
-                              }
-                              alt={job?.companyId?.name || "Company logo"}
-                              className="h-8 w-8 rounded-full object-cover flex-shrink-0"
-                              onError={(e) => {
-                                e.target.src = assets.default_profile;
-                              }}
-                            />
-                            <span className="ml-3 text-sm font-medium text-gray-900 truncate max-w-[150px]">
-                              {job?.companyId?.name || "Unknown"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-900 max-w-[200px] truncate">
-                          {job?.jobId?.title}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-500 hidden sm:table-cell">
-                          {job?.jobId?.location}
-                        </td>
-                        <td className="px-4 py-4 text-sm text-gray-500 hidden md:table-cell">
-                          {moment(job.date).format("ll")}
-                        </td>
-                        <td className="px-4 py-4">
-                          <span
-                            className={`px-2 inline-flex text-xs font-semibold ${
-                              job.status === "Pending"
+                    {[...userApplication].reverse().map((job) => {
+                      const interview = interviews.find(i => i.applicationId === job._id);
+                      return (
+                        <tr key={job._id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4">
+                            <div className="flex items-center">
+                              <img
+                                src={
+                                  job?.companyId?.image
+                                    ? job.companyId.image.startsWith("http")
+                                      ? job.companyId.image
+                                      : `${backendUrl}${job.companyId.image}`
+                                    : assets.default_profile
+                                }
+                                alt={job?.companyId?.name || "Company logo"}
+                                className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                                onError={(e) => {
+                                  e.target.src = assets.default_profile;
+                                }}
+                              />
+                              <span className="ml-3 text-sm font-medium text-gray-900 truncate max-w-[150px]">
+                                {job?.companyId?.name || "Unknown"}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-900 max-w-[200px] truncate">
+                            {job?.jobId?.title}
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-500 hidden sm:table-cell">
+                            {job?.jobId?.location}
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-500 hidden md:table-cell">
+                            {moment(job.date).format("ll")}
+                          </td>
+                          <td className="px-4 py-4">
+                            <span
+                              className={`px-2 inline-flex text-xs font-semibold ${job.status === "Pending"
                                 ? "text-blue-500"
                                 : job.status === "Rejected"
-                                ? "text-red-500"
-                                : "text-green-500"
-                            }`}
-                          >
-                            {job.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                                  ? "text-red-500"
+                                  : "text-green-500"
+                                }`}
+                            >
+                              {job.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-sm">
+                            {interview ? (
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs font-medium text-blue-600">
+                                  {moment(interview.date).format("MMM D, h:mm A")}
+                                </span>
+                                <a
+                                  href={interview.meetLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 font-medium"
+                                >
+                                  <Video size={14} />
+                                  Join Meet
+                                  <ExternalLink size={12} />
+                                </a>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 italic">Not scheduled</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

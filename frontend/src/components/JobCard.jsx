@@ -1,12 +1,14 @@
-import React from "react";
+import React, { useContext } from "react";
 import moment from "moment";
 import kConverter from "k-convert";
 import { assets } from "../assets/assets";
 import { MapPin, Clock, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AppContext } from "../context/AppContext";
 
 const JobCard = ({ job }) => {
   const navigate = useNavigate();
+  const { backendUrl } = useContext(AppContext);
 
   return (
     <div
@@ -19,7 +21,13 @@ const JobCard = ({ job }) => {
     >
       <img
         className="w-[50px] h-[50px] object-contain"
-        src={job.companyId?.image || assets.company_icon}
+        src={
+          job.companyId?.image
+            ? job.companyId.image.startsWith("http")
+              ? job.companyId.image
+              : `${backendUrl}${job.companyId.image}`
+            : assets.company_icon
+        }
         alt={`${job.companyId?.name || "Company"} Logo`}
       />
       <div className="flex-1">

@@ -2,7 +2,7 @@ import Job from "../models/Job.js";
 
 const getAllJobs = async (req, res) => {
   try {
-    const jobs = await Job.find({ visible: true }).populate(
+    const jobs = await Job.find({ visible: true, isDeleted: false }).populate(
       "companyId",
       "-password"
     );

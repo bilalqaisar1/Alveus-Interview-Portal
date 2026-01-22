@@ -1,7 +1,7 @@
-import { ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, MapPin } from "lucide-react";
 import React, { useContext, useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { JobCategories, JobLocations } from "../assets/assets";
+import { JobCategories } from "../assets/assets";
 import JobCard from "../components/JobCard";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -9,6 +9,11 @@ import { AppContext } from "../context/AppContext";
 import Loader from "../components/Loader";
 import { motion } from "framer-motion";
 import { slideRigth, SlideUp } from "../utils/Animation";
+import {
+  getAllCountries,
+  getStatesByCountry,
+  getCitiesByState,
+} from "../utils/locationUtils";
 
 function AllJobs() {
   const [jobData, setJobData] = useState([]);
@@ -16,6 +21,14 @@ function AllJobs() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Location filter states
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
 
   const {
     jobs,
@@ -35,8 +48,38 @@ function AllJobs() {
     title: "",
     location: "",
     selectedCategories: [],
-    selectedLocations: [],
   });
+
+  // Load countries on mount
+  useEffect(() => {
+    const allCountries = getAllCountries();
+    setCountries(allCountries);
+  }, []);
+
+  // Load states when country changes
+  useEffect(() => {
+    if (selectedCountry) {
+      const countryStates = getStatesByCountry(selectedCountry);
+      setStates(countryStates);
+      setCities([]);
+      setSelectedState("");
+      setSelectedCity("");
+    } else {
+      setStates([]);
+      setCities([]);
+    }
+  }, [selectedCountry]);
+
+  // Load cities when state changes
+  useEffect(() => {
+    if (selectedCountry && selectedState) {
+      const stateCities = getCitiesByState(selectedCountry, selectedState);
+      setCities(stateCities);
+      setSelectedCity("");
+    } else {
+      setCities([]);
+    }
+  }, [selectedCountry, selectedState]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,21 +106,23 @@ function AllJobs() {
       title: isSearched ? searchFilter.title : "",
       location: isSearched ? searchFilter.location : "",
       selectedCategories: [],
-      selectedLocations: [],
     });
 
     setCurrentPage(1);
   }, [category, jobs, isSearched, searchFilter]);
 
+  // Filter jobs based on all criteria
   useEffect(() => {
     let results = [...jobData];
 
+    // Title filter
     if (searchInput.title.trim()) {
       results = results.filter((job) =>
         job.title.toLowerCase().includes(searchInput.title.trim().toLowerCase())
       );
     }
 
+    // Text-based location filter (legacy support)
     if (searchInput.location.trim()) {
       results = results.filter((job) =>
         job.location
@@ -86,21 +131,57 @@ function AllJobs() {
       );
     }
 
+    // Category filter
     if (searchInput.selectedCategories.length > 0) {
       results = results.filter((job) =>
         searchInput.selectedCategories.includes(job.category)
       );
     }
 
-    if (searchInput.selectedLocations.length > 0) {
-      results = results.filter((job) =>
-        searchInput.selectedLocations.includes(job.location)
+    // Country filter
+    if (selectedCountry) {
+      const countryName =
+        countries.find((c) => c.value === selectedCountry)?.label || "";
+      results = results.filter(
+        (job) =>
+          job.country === countryName ||
+          job.countryCode === selectedCountry ||
+          job.location.toLowerCase().includes(countryName.toLowerCase())
+      );
+    }
+
+    // State filter
+    if (selectedState) {
+      const stateName =
+        states.find((s) => s.value === selectedState)?.label || "";
+      results = results.filter(
+        (job) =>
+          job.state === stateName ||
+          job.stateCode === selectedState ||
+          job.location.toLowerCase().includes(stateName.toLowerCase())
+      );
+    }
+
+    // City filter
+    if (selectedCity) {
+      results = results.filter(
+        (job) =>
+          job.city === selectedCity ||
+          job.location.toLowerCase().includes(selectedCity.toLowerCase())
       );
     }
 
     setFilteredJobs(results);
     setCurrentPage(1);
-  }, [jobData, searchInput]);
+  }, [
+    jobData,
+    searchInput,
+    selectedCountry,
+    selectedState,
+    selectedCity,
+    countries,
+    states,
+  ]);
 
   const handleSearchChange = (e) => {
     const { name, value } = e.target;
@@ -116,22 +197,15 @@ function AllJobs() {
     });
   };
 
-  const handleLocationToggle = (loc) => {
-    setSearchInput((prev) => {
-      const updated = prev.selectedLocations.includes(loc)
-        ? prev.selectedLocations.filter((l) => l !== loc)
-        : [...prev.selectedLocations, loc];
-      return { ...prev, selectedLocations: updated };
-    });
-  };
-
   const clearAllFilters = () => {
     setSearchInput({
       title: "",
       location: "",
       selectedCategories: [],
-      selectedLocations: [],
     });
+    setSelectedCountry("");
+    setSelectedState("");
+    setSelectedCity("");
     setSearchFilter({ title: "", location: "" });
     setIsSearched(false);
     navigate("/all-jobs/all");
@@ -144,6 +218,18 @@ function AllJobs() {
       .reverse()
       .slice((currentPage - 1) * jobsPerPage, currentPage * jobsPerPage);
   }, [filteredJobs, currentPage]);
+
+  // Get active filters count
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (searchInput.title.trim()) count++;
+    if (searchInput.location.trim()) count++;
+    if (searchInput.selectedCategories.length > 0) count++;
+    if (selectedCountry) count++;
+    if (selectedState) count++;
+    if (selectedCity) count++;
+    return count;
+  }, [searchInput, selectedCountry, selectedState, selectedCity]);
 
   if (loading) {
     return (
@@ -164,6 +250,11 @@ function AllJobs() {
           >
             <Filter size={18} />
             {showFilters ? "Hide Filters" : "Show Filters"}
+            {activeFiltersCount > 0 && (
+              <span className="bg-white text-blue-500 rounded-full px-2 py-0.5 text-xs font-bold">
+                {activeFiltersCount}
+              </span>
+            )}
           </button>
         </div>
 
@@ -175,11 +266,11 @@ function AllJobs() {
         >
           {/* Filters */}
           <div
-            className={`lg:w-1/4 p-4 rounded-lg border border-gray-200 ${
-              showFilters ? "block" : "hidden md:block"
-            }`}
+            className={`lg:w-1/4 p-4 rounded-lg border border-gray-200 ${showFilters ? "block" : "hidden md:block"
+              }`}
           >
             <div className="space-y-6">
+              {/* Job Title Search */}
               <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-2">
                   Job Title
@@ -194,21 +285,102 @@ function AllJobs() {
                 />
               </div>
 
+              {/* Location Search Text */}
               <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                  Job Location
+                  Search Location
                 </h2>
                 <input
                   type="text"
                   name="location"
                   value={searchInput.location}
                   onChange={handleSearchChange}
-                  placeholder="Enter location"
+                  placeholder="Search by location name"
                   className="w-full border border-gray-300 rounded-md px-4 py-2"
                 />
               </div>
 
-              <div>
+              {/* Country-State-City Filters */}
+              <div className="border-t border-gray-200 pt-4">
+                <h2 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <MapPin size={20} className="text-blue-500" />
+                  Filter by Location
+                </h2>
+
+                {/* Country Selector */}
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Country
+                  </label>
+                  <select
+                    value={selectedCountry}
+                    onChange={(e) => setSelectedCountry(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">All Countries</option>
+                    {countries.map((country) => (
+                      <option key={country.value} value={country.value}>
+                        {country.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* State Selector */}
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    State/Division
+                  </label>
+                  <select
+                    value={selectedState}
+                    onChange={(e) => setSelectedState(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    disabled={!selectedCountry || states.length === 0}
+                  >
+                    <option value="">
+                      {!selectedCountry
+                        ? "Select country first"
+                        : states.length === 0
+                          ? "No states available"
+                          : "All States"}
+                    </option>
+                    {states.map((state) => (
+                      <option key={state.value} value={state.value}>
+                        {state.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* City Selector */}
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    City
+                  </label>
+                  <select
+                    value={selectedCity}
+                    onChange={(e) => setSelectedCity(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    disabled={!selectedState || cities.length === 0}
+                  >
+                    <option value="">
+                      {!selectedState
+                        ? "Select state first"
+                        : cities.length === 0
+                          ? "No cities available"
+                          : "All Cities"}
+                    </option>
+                    {cities.map((city) => (
+                      <option key={city.value} value={city.value}>
+                        {city.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Categories */}
+              <div className="border-t border-gray-200 pt-4">
                 <h2 className="text-lg font-semibold text-gray-800 mb-2">
                   Categories
                 </h2>
@@ -233,30 +405,15 @@ function AllJobs() {
                 </ul>
               </div>
 
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                  Locations
-                </h2>
-                <ul className="space-y-2">
-                  {JobLocations.map((loc, i) => (
-                    <li key={i} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id={`loc-${i}`}
-                        checked={searchInput.selectedLocations.includes(loc)}
-                        onChange={() => handleLocationToggle(loc)}
-                        className="h-4 w-4"
-                      />
-                      <label
-                        htmlFor={`loc-${i}`}
-                        className="ml-2 text-gray-700"
-                      >
-                        {loc}
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {/* Clear Filters Button */}
+              {activeFiltersCount > 0 && (
+                <button
+                  onClick={clearAllFilters}
+                  className="w-full py-2 px-4 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition border border-red-200"
+                >
+                  Clear All Filters ({activeFiltersCount})
+                </button>
+              )}
             </div>
           </div>
 
@@ -266,9 +423,8 @@ function AllJobs() {
               <h1 className="text-2xl font-bold text-gray-700 capitalize mb-2">
                 {category === "all"
                   ? "Latest All Jobs"
-                  : `Jobs in ${
-                      category.charAt(0).toUpperCase() + category.slice(1)
-                    }`}
+                  : `Jobs in ${category.charAt(0).toUpperCase() + category.slice(1)
+                  }`}
                 {filteredJobs.length > 0 && (
                   <span className="ml-2 text-gray-500 text-lg">
                     ({filteredJobs.length}{" "}
@@ -279,6 +435,29 @@ function AllJobs() {
               <p className="text-gray-600">
                 Get your desired job from top companies
               </p>
+              {/* Active Filters Display */}
+              {activeFiltersCount > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedCountry && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                      <MapPin size={14} />
+                      {countries.find((c) => c.value === selectedCountry)
+                        ?.label || selectedCountry}
+                    </span>
+                  )}
+                  {selectedState && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                      {states.find((s) => s.value === selectedState)?.label ||
+                        selectedState}
+                    </span>
+                  )}
+                  {selectedCity && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                      {selectedCity}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <motion.div
@@ -323,11 +502,10 @@ function AllJobs() {
                   <button
                     key={i}
                     onClick={() => setCurrentPage(i + 1)}
-                    className={`w-10 h-10 rounded-md border text-center cursor-pointer ${
-                      currentPage === i + 1
+                    className={`w-10 h-10 rounded-md border text-center cursor-pointer ${currentPage === i + 1
                         ? "bg-blue-50 text-blue-500 border-blue-300"
                         : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
-                    }`}
+                      }`}
                   >
                     {i + 1}
                   </button>

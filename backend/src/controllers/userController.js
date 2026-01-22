@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
-import { v2 as cloudinary } from "cloudinary";
+import path from "path";
+import fs from "fs";
 
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
@@ -35,13 +36,30 @@ export const registerUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const imageUploadUrl = await cloudinary.uploader.upload(imageFile.path);
+    // Save image locally instead of Cloudinary
+    const timestamp = Date.now();
+    const fileExtension = path.extname(imageFile.originalname);
+    const fileName = `user-profile-${timestamp}${fileExtension}`;
+    const uploadDir = path.join(process.cwd(), "uploads", "user-profiles");
+    const filePath = path.join(uploadDir, fileName);
 
-    const user = await User({
+    // Ensure directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Move file from temp location to uploads directory
+    fs.copyFileSync(imageFile.path, filePath);
+    fs.unlinkSync(imageFile.path);
+
+    // Create URL for the uploaded image
+    const imageUrl = `/uploads/user-profiles/${fileName}`;
+
+    const user = new User({
       name,
       email,
       password: hashedPassword,
-      image: imageUploadUrl.secure_url,
+      image: imageUrl,
     });
 
     await user.save();
@@ -129,7 +147,7 @@ export const fetchUserData = async (req, res) => {
 
 export const applyJob = async (req, res) => {
   try {
-    const { jobId } = req.body;
+    const { jobId, appliedResume } = req.body;
     const userId = req.userData._id;
 
     if (!userId || !jobId) {
@@ -154,19 +172,45 @@ export const applyJob = async (req, res) => {
       return res.status(404).json({ success: false, message: "Job not found" });
     }
 
+    // Prevent applying to deleted jobs
+    if (jobData.isDeleted) {
+      return res.status(410).json({
+        success: false,
+        message: "This job posting is no longer available",
+      });
+    }
+
+    // Use provided resume or fall back to user's current resume
+    const resumeToUse = appliedResume || req.userData.resume || "";
+
     const jobApplication = new JobApplication({
       jobId,
       userId,
       companyId: jobData.companyId,
       date: new Date(),
+      appliedResume: resumeToUse,
     });
 
     await jobApplication.save();
+
+    // Create notification for the company/recruiter
+    const Notification = (await import("../models/Notification.js")).default;
+    const notification = new Notification({
+      recipientId: jobData.companyId,
+      recipientType: "Company",
+      senderId: userId,
+      senderType: "User",
+      jobApplicationId: jobApplication._id,
+      message: `${req.userData.name} applied for ${jobData.title}`,
+      type: "new_application",
+    });
+    await notification.save();
 
     return res.status(201).json({
       success: true,
       message: "Job applied successfully",
       jobApplication,
+      applicationId: jobApplication._id,
     });
   } catch (error) {
     console.error("Job application error:", error);
@@ -222,9 +266,25 @@ export const uploadResume = async (req, res) => {
       });
     }
 
-    // Upload resume to Cloudinary
-    const uploadedResumeUrl = await cloudinary.uploader.upload(resumeFile.path);
-    userData.resume = uploadedResumeUrl.secure_url;
+    // Save resume locally instead of Cloudinary
+    const timestamp = Date.now();
+    const fileExtension = path.extname(resumeFile.originalname);
+    const fileName = `resume-${userId}-${timestamp}${fileExtension}`;
+    const uploadDir = path.join(process.cwd(), "uploads", "resumes");
+    const filePath = path.join(uploadDir, fileName);
+
+    // Ensure directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Move file from temp location to uploads directory
+    fs.copyFileSync(resumeFile.path, filePath);
+    fs.unlinkSync(resumeFile.path);
+
+    // Create URL for the uploaded resume
+    const resumeUrl = `/uploads/resumes/${fileName}`;
+    userData.resume = resumeUrl;
 
     await userData.save();
 
@@ -240,5 +300,155 @@ export const uploadResume = async (req, res) => {
       success: false,
       message: "Failed to upload resume",
     });
+  }
+};
+
+export const updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.userData._id;
+    const { name } = req.body;
+    const imageFile = req.file;
+
+    const userData = await User.findById(userId);
+
+    if (!userData) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Update fields if provided
+    if (name) userData.name = name;
+    if (req.body.headline) userData.headline = req.body.headline;
+    if (req.body.bio) userData.bio = req.body.bio;
+    if (req.body.location) userData.location = req.body.location;
+    if (req.body.website) userData.website = req.body.website;
+
+    // Update image if provided
+    if (imageFile) {
+      // Delete old image if it exists and is local
+      if (userData.image && userData.image.startsWith("/uploads/")) {
+        const oldImagePath = path.join(process.cwd(), userData.image);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
+
+      // Save new image locally
+      const timestamp = Date.now();
+      const fileExtension = path.extname(imageFile.originalname);
+      const fileName = `user-profile-${timestamp}${fileExtension}`;
+      const uploadDir = path.join(process.cwd(), "uploads", "user-profiles");
+      const filePath = path.join(uploadDir, fileName);
+
+      // Ensure directory exists
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      // Move file from temp location to uploads directory
+      fs.copyFileSync(imageFile.path, filePath);
+      fs.unlinkSync(imageFile.path);
+
+      // Create URL for the uploaded image
+      const imageUrl = `/uploads/user-profiles/${fileName}`;
+      userData.image = imageUrl;
+    }
+
+    await userData.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      userData: {
+        _id: userData._id,
+        name: userData.name,
+        email: userData.email,
+        image: userData.image,
+        resume: userData.resume,
+        headline: userData.headline,
+        bio: userData.bio,
+        location: userData.location,
+        coverImage: userData.coverImage,
+        website: userData.website,
+      },
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update profile",
+    });
+  }
+};
+
+export const changeUserPassword = async (req, res) => {
+  try {
+    const userId = req.userData._id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password and new password are required",
+      });
+    }
+
+    const userData = await User.findById(userId);
+
+    if (!userData) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      userData.password
+    );
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    userData.password = hashedPassword;
+
+    await userData.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to change password",
+    });
+  }
+};
+
+export const getPublicProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.json({ success: true, profile: user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

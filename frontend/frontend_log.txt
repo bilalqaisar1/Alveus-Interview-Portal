@@ -1,0 +1,24 @@
+
+> frontend@0.0.0 dev
+> vite
+
+
+  VITE v6.3.1  ready in 749 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+5:44:40 PM [vite] (client) page reload src/main.jsx
+5:44:40 PM [vite] (client) page reload frontend_log.txt
+5:44:40 PM [vite] (client) hmr update /src/components/voice-agent/SimpleVoiceAssistant.jsx, /src/index.css
+5:44:40 PM [vite] (client) page reload frontend_log.txt
+5:44:40 PM [vite] (client) hmr update /src/pages/AIInterview.jsx, /src/index.css
+5:44:40 PM [vite] (client) page reload frontend_log.txt
+5:44:40 PM [vite] (client) hmr update /src/components/voice-agent/SimpleVoiceAssistant.jsx, /src/index.css
+5:44:40 PM [vite] (client) hmr update /src/pages/AIInterview.jsx, /src/index.css
+5:44:40 PM [vite] (client) page reload frontend_log.txt
+5:44:40 PM [vite] (client) page reload src/main.jsx
+5:44:40 PM [vite] (client) page reload src/main.jsx
+5:44:40 PM [vite] (client) page reload frontend_log.txt
+5:45:22 PM [vite] (client) hmr update /src/pages/AIInterview.jsx, /src/index.css
+5:45:22 PM [vite] (client) page reload frontend_log.txt

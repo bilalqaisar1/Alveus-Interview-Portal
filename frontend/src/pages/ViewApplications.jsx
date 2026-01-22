@@ -124,7 +124,13 @@ const ViewApplications = () => {
                     <td className="px-4 py-4">
                       <div className="flex items-center">
                         <img
-                          src={job?.userId?.image || assets.default_profile}
+                          src={
+                            job?.userId?.image
+                              ? job.userId.image.startsWith("http")
+                                ? job.userId.image
+                                : `${backendUrl}${job.userId.image}`
+                              : assets.default_profile
+                          }
                           alt={job?.userId?.name || "Applicant"}
                           className="h-8 w-8 rounded-full object-cover flex-shrink-0"
                           onError={(e) =>
@@ -150,7 +156,11 @@ const ViewApplications = () => {
                     <td className="px-4 py-4 text-center">
                       {job?.userId?.resume ? (
                         <a
-                          href={job.userId.resume}
+                          href={
+                            job.userId.resume.startsWith("http")
+                              ? job.userId.resume
+                              : `${backendUrl}${job.userId.resume}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center justify-center text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded hover:bg-blue-200 transition-colors"
@@ -195,11 +205,10 @@ const ViewApplications = () => {
                         </div>
                       ) : (
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            job.status === "Accepted"
-                              ? "text-green-800"
-                              : "text-red-800"
-                          }`}
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${job.status === "Accepted"
+                            ? "text-green-800"
+                            : "text-red-800"
+                            }`}
                         >
                           {job.status}
                         </span>

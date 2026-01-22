@@ -6,8 +6,10 @@ const jobApplicationSchema = mongoose.Schema({
   jobId: { type: mongoose.Types.ObjectId, required: true, ref: "Job" },
   status: { type: String, default: "Pending" },
   date: { type: Number, required: true },
+  appliedResume: { type: String, default: "" },
 });
 
 const JobApplication = mongoose.model("JobApplication", jobApplicationSchema);
 
 export default JobApplication;
+

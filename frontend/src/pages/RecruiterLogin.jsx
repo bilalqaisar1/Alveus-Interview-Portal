@@ -31,7 +31,7 @@ const RecruiterLogin = () => {
         setCompanyData(data.companyData);
         localStorage.setItem("companyToken", data.token);
         toast.success(data.message);
-        navigate("/dashboard");
+        navigate("/");
       } else {
         toast.error(data.message);
       }
@@ -87,7 +87,6 @@ const RecruiterLogin = () => {
                   <input
                     type="checkbox"
                     className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    required
                   />
                   <span className="text-sm text-gray-600">Remember me</span>
                 </label>
@@ -96,9 +95,8 @@ const RecruiterLogin = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex justify-center items-center ${
-                  loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-                }`}
+                className={`w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex justify-center items-center ${loading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                  }`}
               >
                 {loading ? (
                   <LoaderCircle className="animate-spin h-5 w-5" />

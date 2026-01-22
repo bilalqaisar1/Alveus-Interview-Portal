@@ -51,13 +51,9 @@ export const AppContextProvider = ({ children }) => {
       });
       if (data.success) {
         setUserData(data.userData);
-      } else {
-        toast.error(data.message);
       }
     } catch (error) {
-      toast.error(
-        error?.response?.data?.message || "Failed to fetch user data."
-      );
+      console.error("Fetch user data error:", error);
     } finally {
       setUserDataLoading(false);
     }
@@ -72,13 +68,9 @@ export const AppContextProvider = ({ children }) => {
       });
       if (data.success) {
         setCompanyData(data.companyData);
-      } else {
-        toast.error(data.message);
       }
     } catch (error) {
-      toast.error(
-        error?.response?.data?.message || "Failed to fetch company data."
-      );
+      console.error("Fetch company data error:", error);
     } finally {
       setIsCompanyLoading(false);
     }
@@ -90,47 +82,93 @@ export const AppContextProvider = ({ children }) => {
       const { data } = await axios.get(`${backendUrl}/job/all-jobs`);
       if (data.success) {
         setJobs(data.jobData);
-      } else {
-        toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to fetch jobs.");
+      console.error("Fetch jobs error:", error);
     } finally {
       setJobLoading(false);
     }
   };
 
   const fetchUserApplication = async () => {
+    if (!userToken) return;
     try {
       setApplicationsLoading(true);
-
       const { data } = await axios.post(
         `${backendUrl}/user/get-user-applications`,
         {},
-        {
-          headers: {
-            token: userToken,
-          },
-        }
+        { headers: { token: userToken } }
       );
-
       if (data.success) {
         setUserApplication(data.jobApplications);
-      } else {
-        toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message);
+      console.error("Fetch user applications error:", error);
     } finally {
       setApplicationsLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (localStorage.getItem("userToken")) {
-      fetchUserApplication();
+  // Notification State
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const activeToken = userToken || companyToken;
+
+  const fetchNotifications = async () => {
+    if (!activeToken) return;
+    try {
+      const { data } = await axios.get(`${backendUrl}/notification`, {
+        headers: { token: activeToken },
+      });
+      if (data.success) {
+        setNotifications(data.notifications);
+      }
+
+      const { data: countData } = await axios.get(
+        `${backendUrl}/notification/unread-count`,
+        { headers: { token: activeToken } }
+      );
+      if (countData.success) {
+        setUnreadCount(countData.count);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
     }
-  }, []);
+  };
+
+  const markNotificationAsRead = async (id) => {
+    if (!activeToken) return;
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/notification/${id}/read`,
+        {},
+        { headers: { token: activeToken } }
+      );
+      if (data.success) {
+        fetchNotifications();
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const markAllNotificationsAsRead = async () => {
+    if (!activeToken) return;
+    try {
+      const { data } = await axios.put(
+        `${backendUrl}/notification/read-all`,
+        {},
+        { headers: { token: activeToken } }
+      );
+      if (data.success) {
+        fetchNotifications();
+        toast.success("All notifications marked as read");
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   useEffect(() => {
     fetchJobsData();
@@ -140,6 +178,7 @@ export const AppContextProvider = ({ children }) => {
     if (userToken) {
       setIsLogin(true);
       fetchUserData();
+      fetchUserApplication();
     } else {
       setUserData(null);
       setIsLogin(false);
@@ -156,23 +195,27 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [companyToken]);
 
+  useEffect(() => {
+    if (activeToken) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000); // 30s
+      return () => clearInterval(interval);
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [activeToken]);
+
   const value = {
-    // Search
     searchFilter,
     setSearchFilter,
     isSearched,
     setIsSearched,
-
-    // Jobs
     jobs,
     setJobs,
     jobLoading,
     fetchJobsData,
-
-    // Backend
     backendUrl,
-
-    // User
     userToken,
     setUserToken,
     userData,
@@ -181,8 +224,6 @@ export const AppContextProvider = ({ children }) => {
     isLogin,
     setIsLogin,
     fetchUserData,
-
-    // Company
     companyToken,
     setCompanyToken,
     companyData,
@@ -193,7 +234,12 @@ export const AppContextProvider = ({ children }) => {
     companyLoading,
     userApplication,
     applicationsLoading,
-    fetchUserApplication
+    fetchUserApplication,
+    notifications,
+    unreadCount,
+    fetchNotifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
