@@ -203,7 +203,8 @@ export const getInterviewLLMDetail = async (req, res) => {
         const llmPayload = {
             interviewId: interview._id,
             candidate: {
-                ...interview.candidateId.toObject(),
+                name: interview.candidateId?.name,
+                email: interview.candidateId?.email,
                 resumeText: resumeContent
             },
             job: {
@@ -219,12 +220,6 @@ export const getInterviewLLMDetail = async (req, res) => {
                 status: interview.status
             }
         };
-
-        // Remove sensitive fields
-        if (llmPayload.candidate) {
-            delete llmPayload.candidate.password;
-            delete llmPayload.candidate.__v;
-        }
 
         res.json({ success: true, interviewDetail: llmPayload });
     } catch (error) {
