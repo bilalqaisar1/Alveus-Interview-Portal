@@ -37,7 +37,7 @@ const App = () => {
         <Route path="/ai-assistant" element={<AIAssistant />} />
         <Route path="/apply-job/:id" element={<ApplyJob />} />
         <Route path="/applications" element={<Applications />} />
-        <Route path="/feed" element={<Feed />} />
+        {/* <Route path="/feed" element={<Feed />} /> */}
         <Route path="/candidate-login" element={<CandidatesLogin />} />
         <Route path="/candidate-signup" element={<CandidatesSignup />} />
         <Route path="/recruiter-login" element={<RecruiterLogin />} />

@@ -14,7 +14,7 @@ export const AppContextProvider = ({ children }) => {
 
   const [userToken, setUserToken] = useState(localStorage.getItem("userToken"));
   const [userData, setUserData] = useState(null);
-  const [userDataLoading, setUserDataLoading] = useState(false);
+  const [userDataLoading, setUserDataLoading] = useState(!!localStorage.getItem("userToken"));
   const [isLogin, setIsLogin] = useState(!!userToken);
   const [userApplication, setUserApplication] = useState(null);
   const [applicationsLoading, setApplicationsLoading] = useState(false);
@@ -24,7 +24,7 @@ export const AppContextProvider = ({ children }) => {
   );
   const [companyData, setCompanyData] = useState(null);
   const [isCompanyLogin, setIsCompanyLogin] = useState(!!companyToken);
-  const [companyLoading, setIsCompanyLoading] = useState(false);
+  const [companyLoading, setIsCompanyLoading] = useState(!!localStorage.getItem("companyToken"));
 
   useEffect(() => {
     if (userToken) {

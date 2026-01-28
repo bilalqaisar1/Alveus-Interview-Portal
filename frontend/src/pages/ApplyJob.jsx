@@ -35,6 +35,7 @@ const ApplyJob = () => {
     userToken,
     userData,
     userApplication = [],
+    fetchUserApplication,
   } = useContext(AppContext);
 
   const fetchRecommendedSlots = async () => {
@@ -116,6 +117,7 @@ const ApplyJob = () => {
 
       if (data.success) {
         toast.success("Application submitted & Interview scheduled!");
+        fetchUserApplication();
         setAlreadyApplied(true);
         setShowSlotModal(false);
       } else {

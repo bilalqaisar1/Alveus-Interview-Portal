@@ -1,5 +1,5 @@
 import express from "express";
-import { getRecommendedSlots, scheduleInterview, getUserInterviews, getCompanyInterviews } from "../controllers/interviewController.js";
+import { getRecommendedSlots, scheduleInterview, getUserInterviews, getCompanyInterviews, getInterviewSummary, getInterviewLLMDetail } from "../controllers/interviewController.js";
 import userAuthMiddleware from "../middlewares/userAuthMiddleware.js";
 import companyAuthMiddleware from "../middlewares/companyAuthMiddleware.js";
 
@@ -12,6 +12,8 @@ router.get("/my-interviews", userAuthMiddleware, getUserInterviews);
 
 // Company/Recruiter Routes
 router.get("/company-interviews", companyAuthMiddleware, getCompanyInterviews);
+router.get("/summary", companyAuthMiddleware, getInterviewSummary);
+router.get("/llm-info/:id", companyAuthMiddleware, getInterviewLLMDetail);
 
 export default router;
 

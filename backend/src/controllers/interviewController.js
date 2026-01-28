@@ -2,6 +2,7 @@ import Interview from "../models/Interview.js";
 import JobApplication from "../models/JobApplication.js";
 import Job from "../models/Job.js";
 import Notification from "../models/Notification.js";
+import { extractTextFromPDF } from "../utils/pdfParser.js";
 
 // Mock Google Calendar Service
 const createGoogleCalendarEvent = async (summary, description, startTime, endTime) => {
@@ -138,3 +139,95 @@ export const getCompanyInterviews = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 }
+
+export const getInterviewSummary = async (req, res) => {
+    try {
+        const companyId = req.companyData ? req.companyData._id : null;
+        const query = companyId ? { recruiterId: companyId } : {};
+
+        const interviews = await Interview.find(query)
+            .populate('jobId', 'title')
+            .populate('candidateId', 'name')
+            .populate('applicationId', 'appliedResume')
+            .sort({ date: 1 });
+
+        const summary = interviews.map(interview => ({
+            interviewId: interview._id,
+            candidateName: interview.candidateId ? interview.candidateId.name : "N/A",
+            candidateResume: interview.applicationId ? interview.applicationId.appliedResume : "N/A",
+            interviewTime: new Date(interview.date).toLocaleString(),
+            jobTitle: interview.jobId ? interview.jobId.title : "N/A",
+            status: interview.status
+        }));
+
+        res.json({ success: true, interviews: summary });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getInterviewLLMDetail = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const interview = await Interview.findById(id)
+            .populate('jobId')
+            .populate('candidateId', '-password')
+            .populate('applicationId');
+
+        if (!interview) {
+            return res.status(404).json({ success: false, message: "Interview not found" });
+        }
+
+        // Helper function to strip HTML tags
+        const stripHtml = (html) => {
+            if (!html) return "";
+            return html
+                .replace(/<[^>]*>/g, '') // Remove HTML tags
+                .replace(/&nbsp;/g, ' ') // Replace &nbsp; with space
+                .replace(/&amp;/g, '&')  // Replace &amp; with &
+                .replace(/&lt;/g, '<')   // Replace &lt; with <
+                .replace(/&gt;/g, '>')   // Replace &gt; with >
+                .replace(/&quot;/g, '"') // Replace &quot; with "
+                .replace(/\s+/g, ' ')    // Collapse multiple spaces
+                .trim();
+        };
+
+        // Extract text from resume if available
+        let resumeContent = "No resume provided.";
+        if (interview.applicationId && interview.applicationId.appliedResume) {
+            resumeContent = await extractTextFromPDF(interview.applicationId.appliedResume);
+        }
+
+        const jobData = interview.jobId.toObject();
+
+        const llmPayload = {
+            interviewId: interview._id,
+            candidate: {
+                ...interview.candidateId.toObject(),
+                resumeText: resumeContent
+            },
+            job: {
+                title: jobData.title,
+                description: stripHtml(jobData.description), // Clean HTML from description
+                location: jobData.location,
+                level: jobData.level,
+                category: jobData.category,
+                salary: jobData.salary
+            },
+            schedule: {
+                time: new Date(interview.date).toLocaleString(),
+                status: interview.status
+            }
+        };
+
+        // Remove sensitive fields
+        if (llmPayload.candidate) {
+            delete llmPayload.candidate.password;
+            delete llmPayload.candidate.__v;
+        }
+
+        res.json({ success: true, interviewDetail: llmPayload });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

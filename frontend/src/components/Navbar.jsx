@@ -37,7 +37,6 @@ const Navbar = () => {
   const candidateMenu = [
     { name: "Home", path: "/" },
     { name: "All Jobs", path: "/all-jobs/all" },
-    { name: "Feed", path: "/feed" },
     { name: "AI Interview", path: "/ai-interview" },
     { name: "AI Assistant", path: "/ai-assistant" },
     { name: "About", path: "/about" },
@@ -47,7 +46,6 @@ const Navbar = () => {
     { name: "Home", path: "/" },
     { name: "Manage Jobs", path: "/dashboard/manage-jobs" },
     { name: "View Applications", path: "/dashboard/view-applications" },
-    { name: "Feed", path: "/feed" },
     { name: "AI Assistant", path: "/ai-assistant" },
   ];
 
@@ -214,7 +212,7 @@ const Navbar = () => {
                         Settings
                       </Link>
                       <Link
-                        to={`/profile/${activeData?._id}`}
+                        to={`/profile/${activeData?._id || "undefined"}`}
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2"
                       >
                         <UserRound size={16} />
@@ -351,7 +349,7 @@ const Navbar = () => {
                   </li>
                   <li>
                     <Link
-                      to={`/profile/${activeData?._id}`}
+                      to={`/profile/${activeData?._id || "undefined"}`}
                       onClick={toggleMenu}
                       className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
                     >

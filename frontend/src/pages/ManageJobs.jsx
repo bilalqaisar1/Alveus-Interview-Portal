@@ -6,7 +6,7 @@ import "quill/dist/quill.snow.css";
 import { AppContext } from "../context/AppContext";
 import Loader from "../components/Loader";
 import { toast } from "react-hot-toast";
-import { MoreVertical, Plus, X, Calendar, Clock, Video, User, LoaderCircle, Briefcase } from "lucide-react";
+import { MoreVertical, Plus, X, Calendar, Clock, Video, User, LoaderCircle, Briefcase, ExternalLink, FileText, Mail, Info } from "lucide-react";
 import LocationSelector from "../components/LocationSelector";
 import { formatLocation, DEFAULT_COUNTRY } from "../utils/locationUtils";
 
@@ -20,6 +20,7 @@ const ManageJobs = () => {
   // Scheduled Interviews
   const [interviews, setInterviews] = useState([]);
   const [interviewsLoading, setInterviewsLoading] = useState(false);
+  const [selectedInterview, setSelectedInterview] = useState(null);
 
   // Add Job Form State
   const editorRef = useRef(null);
@@ -272,16 +273,16 @@ const ManageJobs = () => {
                     </div>
                     <span
                       className={`text-xs font-bold px-2 py-1 rounded-full ${countdown.isNow
-                          ? "bg-green-100 text-green-700"
-                          : countdown.isSoon
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-blue-100 text-blue-700"
+                        ? "bg-green-100 text-green-700"
+                        : countdown.isSoon
+                          ? "bg-orange-100 text-orange-700"
+                          : "bg-blue-100 text-blue-700"
                         }`}
                     >
                       {countdown.text}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <div className="flex items-center gap-4 text-xs text-gray-500 pointer-events-none">
                     <span className="flex items-center gap-1">
                       <Calendar size={12} />
                       {moment(interview.date).format("MMM D, YYYY")}
@@ -291,17 +292,26 @@ const ManageJobs = () => {
                       {moment(interview.date).format("h:mm A")}
                     </span>
                   </div>
-                  {interview.meetLink && (
-                    <a
-                      href={interview.meetLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition-colors"
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={() => setSelectedInterview(interview)}
+                      className="flex-1 flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold py-2 px-3 rounded-lg transition-all shadow-sm"
                     >
-                      <Video size={14} />
-                      Join Meeting
-                    </a>
-                  )}
+                      <Info size={14} />
+                      View Details
+                    </button>
+                    {interview.meetLink && (
+                      <a
+                        href={interview.meetLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition-all shadow-sm"
+                      >
+                        <Video size={14} />
+                        Join
+                      </a>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -328,17 +338,6 @@ const ManageJobs = () => {
         </div>
       ) : (
         <div className="overflow-x-auto shadow rounded-lg border border-gray-200">
-          <div className="p-4 bg-white border-b border-gray-200 flex justify-end">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showDeleted}
-                onChange={(e) => setShowDeleted(e.target.checked)}
-                className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700">Show Deleted Jobs</span>
-            </label>
-          </div>
           <table className="w-full bg-white">
             <thead className="bg-gray-100">
               <tr>
@@ -353,7 +352,7 @@ const ManageJobs = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {manageJobData
-                .filter((job) => (showDeleted ? job.isDeleted : !job.isDeleted))
+                .filter((job) => !job.isDeleted)
                 .reverse()
                 .map((job, index) => (
                   <tr key={job._id} className="hover:bg-gray-50 transition-colors">
@@ -514,6 +513,117 @@ const ManageJobs = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Interview Details Modal */}
+      {selectedInterview && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white relative">
+              <button
+                onClick={() => setSelectedInterview(null)}
+                className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                  <User size={32} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">{selectedInterview.candidateId?.name || "Candidate Details"}</h2>
+                  <p className="text-indigo-100 flex items-center gap-1 text-sm mt-1">
+                    <Mail size={14} /> {selectedInterview.candidateId?.email || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Position</p>
+                  <p className="font-semibold text-gray-800 flex items-center gap-2">
+                    <Briefcase size={16} className="text-indigo-500" />
+                    {selectedInterview.jobId?.title || "Not Specified"}
+                  </p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Status</p>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {selectedInterview.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Time Details */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-widest border-b pb-1">Schedule Details</h3>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <Calendar size={18} className="text-indigo-500" />
+                    <span>{moment(selectedInterview.date).format("dddd, MMMM Do YYYY")}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-3 text-gray-600">
+                    <Clock size={18} className="text-indigo-500" />
+                    <span>{moment(selectedInterview.date).format("h:mm A")}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assets & Links */}
+              <div className="space-y-3 pt-2">
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-widest border-b pb-1">Interview Assets</h3>
+                <div className="flex flex-col gap-2">
+                  <a
+                    href={selectedInterview.applicationId?.appliedResume || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-100 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="text-indigo-600" size={20} />
+                      <span className="text-gray-800 font-medium">Candidate Resume</span>
+                    </div>
+                    <ExternalLink size={16} className="text-indigo-400 group-hover:text-indigo-600" />
+                  </a>
+
+                  {selectedInterview.meetLink && (
+                    <a
+                      href={selectedInterview.meetLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 rounded-xl border border-purple-100 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Video className="text-purple-600" size={20} />
+                        <span className="text-gray-800 font-medium">Meeting Link</span>
+                      </div>
+                      <ExternalLink size={16} className="text-purple-400 group-hover:text-purple-600" />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Unique ID Footer */}
+              <div className="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-[10px] text-gray-400 font-mono">
+                <span>INTERVIEW ID: {selectedInterview._id}</span>
+                <span>CREATED: {moment(selectedInterview.createdAt).format("YYYY-MM-DD")}</span>
+              </div>
+            </div>
+
+            <div className="p-6 bg-gray-50 border-t border-gray-100 shadow-inner">
+              <button
+                onClick={() => setSelectedInterview(null)}
+                className="w-full py-3 bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-xl transition-all shadow-md active:scale-[0.98]"
+              >
+                Close Details
+              </button>
+            </div>
           </div>
         </div>
       )}

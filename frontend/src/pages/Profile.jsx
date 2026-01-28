@@ -55,40 +55,59 @@ const Profile = () => {
     const currentUserId = userData?._id || companyData?._id;
 
     const fetchProfileData = async () => {
+        if (!id || id === "undefined") {
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             // Try fetching as user first
             let res;
+            let success = false;
+
             try {
                 res = await axios.get(`${backendUrl}/user/profile/${id}`);
-                if (res.data.success) {
+                if (res.data?.success) {
                     setProfile(res.data.profile);
                     setIsOwnProfile(res.data.profile._id === currentUserId);
-                } else {
-                    throw new Error("User profile not found");
+                    success = true;
                 }
             } catch (userErr) {
                 // If user not found, try company
-                res = await axios.get(`${backendUrl}/company/profile/${id}`);
-                if (res.data.success) {
-                    setProfile(res.data.profile);
-                    setIsOwnProfile(res.data.profile._id === currentUserId);
-                } else {
+                try {
+                    res = await axios.get(`${backendUrl}/company/profile/${id}`);
+                    if (res.data?.success) {
+                        setProfile(res.data.profile);
+                        setIsOwnProfile(res.data.profile._id === currentUserId);
+                        success = true;
+                    }
+                } catch (companyErr) {
                     throw new Error("Profile not found");
                 }
             }
 
-            // Fetch Author Posts if profile exists
-            const postsRes = await axios.get(`${backendUrl}/feed/author/${id}`, {
-                headers: { token: activeToken }
-            });
-            if (postsRes.data.success) {
-                setPosts(postsRes.data.posts);
+            if (!success) {
+                throw new Error("Profile not found");
             }
+
+            // Fetch Author Posts if profile exists
+            try {
+                const postsRes = await axios.get(`${backendUrl}/feed/author/${id}`, {
+                    headers: { token: activeToken }
+                });
+                if (postsRes.data.success) {
+                    setPosts(postsRes.data.posts);
+                }
+            } catch (postsErr) {
+                console.warn("Could not fetch author posts:", postsErr.message);
+                // Don't fail the whole profile if only posts fail
+            }
+
         } catch (error) {
             console.error("Fetch profile error:", error);
             toast.error("Profile not found");
-            navigate("/feed");
+            navigate("/"); // changed from /feed to /
         } finally {
             setLoading(false);
         }
@@ -97,8 +116,11 @@ const Profile = () => {
     useEffect(() => {
         if (!activeToken) {
             navigate("/candidate-login");
-        } else {
+        } else if (id && id !== "undefined") {
             fetchProfileData();
+        } else if (id === "undefined" && currentUserId) {
+            // If the URL is 'undefined' but we now have the ID from context, redirect to the real URL
+            navigate(`/profile/${currentUserId}`, { replace: true });
         }
     }, [id, currentUserId, activeToken]);
 
@@ -165,9 +187,16 @@ const Profile = () => {
         }
     };
 
-    if (loading) return (
+    if (loading || !profile) return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="flex flex-col items-center gap-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                {!id || id === "undefined" ? (
+                    <p className="text-gray-500 text-sm animate-pulse">Identifying your profile...</p>
+                ) : (
+                    <p className="text-gray-500 text-sm">Loading profile data...</p>
+                )}
+            </div>
         </div>
     );
 

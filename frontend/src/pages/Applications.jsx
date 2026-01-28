@@ -5,7 +5,7 @@ import { assets } from "../assets/assets";
 import moment from "moment";
 import { AppContext } from "../context/AppContext";
 import Loader from "../components/Loader";
-import { LoaderCircle, Video, ExternalLink } from "lucide-react";
+import { LoaderCircle, Video, ExternalLink, Calendar, Clock, User, Briefcase } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
@@ -36,6 +36,22 @@ const Applications = () => {
     } catch (error) {
       console.error("Error fetching interviews:", error);
     }
+  };
+
+  // Countdown timer for interviews
+  const getCountdown = (timestamp) => {
+    const now = Date.now();
+    const diff = timestamp - now;
+
+    if (diff <= 0) return { text: "Started", isNow: true };
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (days > 0) return { text: `${days}d ${hours}h`, isNow: false };
+    if (hours > 0) return { text: `${hours}h ${minutes}m`, isNow: false };
+    return { text: `${minutes}m`, isNow: false, isSoon: minutes < 30 };
   };
 
   const handleResumeSave = async () => {
@@ -81,6 +97,16 @@ const Applications = () => {
       fetchInterviews();
     }
   }, [userToken]);
+
+  // Update countdown every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setInterviews(prev => [...prev]);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const upcomingInterviews = interviews.filter(i => i.date > Date.now() && i.status === "Scheduled");
 
   return (
     <>
@@ -152,6 +178,77 @@ const Applications = () => {
             </div>
           )}
         </div>
+
+        {/* Scheduled Interviews Section */}
+        {upcomingInterviews.length > 0 && (
+          <div className="mb-10 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="text-blue-600" size={22} />
+              <h2 className="text-lg font-semibold text-gray-800">
+                Upcoming Interviews ({upcomingInterviews.length})
+              </h2>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {upcomingInterviews.slice(0, 6).map((interview) => {
+                const countdown = getCountdown(interview.date);
+                return (
+                  <div
+                    key={interview._id}
+                    className={`bg-white rounded-lg p-4 border shadow-sm ${countdown.isSoon ? "border-orange-300" : "border-gray-200"
+                      }`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <Briefcase size={18} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">
+                            {interview.jobId?.title || "Position"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {interview.companyId?.name || "Company"}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className={`text-xs font-bold px-2 py-1 rounded-full ${countdown.isNow
+                          ? "bg-green-100 text-green-700"
+                          : countdown.isSoon
+                            ? "bg-orange-100 text-orange-700"
+                            : "bg-blue-100 text-blue-700"
+                          }`}
+                      >
+                        {countdown.text}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                      <span className="flex items-center gap-1">
+                        <Calendar size={12} />
+                        {moment(interview.date).format("MMM D, YYYY")}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} />
+                        {moment(interview.date).format("h:mm A")}
+                      </span>
+                    </div>
+                    {interview.meetLink && (
+                      <a
+                        href={interview.meetLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-2.5 px-3 rounded-lg transition-colors"
+                      >
+                        <Video size={14} />
+                        Join Meeting
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Applications Table */}
         {applicationsLoading ? (
