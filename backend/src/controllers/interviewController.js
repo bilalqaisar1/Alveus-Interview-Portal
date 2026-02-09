@@ -218,10 +218,57 @@ export const getInterviewLLMDetail = async (req, res) => {
             schedule: {
                 time: new Date(interview.date).toLocaleString(),
                 status: interview.status
-            }
+            },
+            evaluation: interview.evaluation,
+            evaluationAt: interview.evaluationAt
         };
 
         res.json({ success: true, interviewDetail: llmPayload });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const submitInterviewEvaluation = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { evaluation, status } = req.body;
+
+        const interview = await Interview.findById(id);
+        if (!interview) {
+            return res.status(404).json({ success: false, message: "Interview not found" });
+        }
+
+        interview.evaluation = evaluation;
+        interview.status = status || "Completed";
+        interview.evaluationAt = new Date();
+        await interview.save();
+
+        res.json({ success: true, message: "Evaluation submitted successfully", interview });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const updateInterviewStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const interview = await Interview.findById(id);
+        if (!interview) {
+            return res.status(404).json({ success: false, message: "Interview not found" });
+        }
+
+        // Don't overwrite Completed status
+        if (interview.status === "Completed") {
+            return res.json({ success: true, message: "Interview already completed, status not changed", interview });
+        }
+
+        interview.status = status;
+        await interview.save();
+
+        res.json({ success: true, message: `Interview status updated to ${status}`, interview });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

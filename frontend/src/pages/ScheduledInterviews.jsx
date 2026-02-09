@@ -127,8 +127,8 @@ const ScheduledInterviews = () => {
         return { label: "Scheduled", color: "text-blue-600 bg-blue-50", icon: <Calendar size={14} /> };
     };
 
-    const upcomingInterviews = interviews.filter(i => i.date > Date.now() - (2 * 60 * 60 * 1000) && i.status === "Scheduled");
-    const pastInterviews = interviews.filter(i => i.date <= Date.now() - (2 * 60 * 60 * 1000) || i.status === "Completed");
+    const upcomingInterviews = interviews.filter(i => i.date > Date.now() - (2 * 60 * 60 * 1000) && (i.status === "Scheduled" || i.status === "In Progress"));
+    const pastInterviews = interviews.filter(i => i.date <= Date.now() - (2 * 60 * 60 * 1000) || i.status === "Completed" || i.status === "Expired");
 
     if (!isLogin) {
         return (
@@ -234,7 +234,7 @@ const ScheduledInterviews = () => {
                                     <div className="flex gap-2">
                                         {userData?.resume && (
                                             <a
-                                                href={userData.resume}
+                                                href={userData.resume.startsWith("http") ? userData.resume : `${backendUrl}${userData.resume}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
@@ -289,11 +289,16 @@ const ScheduledInterviews = () => {
                                             </thead>
                                             <tbody className="divide-y divide-gray-100">
                                                 {[...userApplication].reverse().map((job) => {
-                                                    const interview = interviews.find(i => i.applicationId === job._id);
+                                                    const interview = interviews.find(i => {
+                                                        const appId = i.applicationId?._id || i.applicationId;
+                                                        return appId === job._id;
+                                                    });
                                                     const isScheduled = !!interview;
                                                     const now = Date.now();
                                                     const diff = isScheduled ? interview.date - now : null;
-                                                    const isUpcoming = isScheduled && diff > -(2 * 60 * 60 * 1000);
+                                                    const isUpcoming = isScheduled &&
+                                                        diff > -(2 * 60 * 60 * 1000) &&
+                                                        (interview.status === "Scheduled" || interview.status === "In Progress");
 
                                                     if (isScheduled && !isUpcoming) return null;
 
@@ -411,15 +416,23 @@ const ScheduledInterviews = () => {
                                                             <p className="text-xs text-gray-500 font-medium">{moment(interview.date).format("h:mm A")}</p>
                                                         </td>
                                                         <td className="px-6 py-4">
-                                                            <span className="inline-flex items-center gap-1 text-xs font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">
-                                                                <CheckCircle2 size={12} />
-                                                                {interview.date < Date.now() ? "Completed" : "Scheduled"}
+                                                            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg ${interview.status === "Completed" ? "bg-green-50 text-green-600" :
+                                                                interview.status === "Expired" ? "bg-red-50 text-red-500" :
+                                                                    interview.status === "In Progress" ? "bg-orange-50 text-orange-500" :
+                                                                        "bg-gray-100 text-gray-500"
+                                                                }`}>
+                                                                {interview.status === "Completed" ? <CheckCircle2 size={12} /> :
+                                                                    interview.status === "Expired" ? <AlertCircle size={12} /> :
+                                                                        interview.status === "In Progress" ? <Clock size={12} /> :
+                                                                            <Calendar size={12} />}
+                                                                {interview.status}
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4">
-                                                            <button className="text-blue-600 hover:text-blue-800 text-sm font-bold">
-                                                                View History
-                                                            </button>
+                                                            <Link to={`/interview-results/${interview._id}`} className="text-blue-600 hover:text-blue-800 text-sm font-bold flex items-center gap-1 group">
+                                                                <Eye size={16} className="group-hover:scale-110 transition-transform" />
+                                                                View Results
+                                                            </Link>
                                                         </td>
                                                     </tr>
                                                 ))}

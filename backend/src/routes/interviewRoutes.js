@@ -1,5 +1,5 @@
 import express from "express";
-import { getRecommendedSlots, scheduleInterview, getUserInterviews, getCompanyInterviews, getInterviewSummary, getInterviewLLMDetail } from "../controllers/interviewController.js";
+import { getRecommendedSlots, scheduleInterview, getUserInterviews, getCompanyInterviews, getInterviewSummary, getInterviewLLMDetail, submitInterviewEvaluation, updateInterviewStatus } from "../controllers/interviewController.js";
 import userAuthMiddleware from "../middlewares/userAuthMiddleware.js";
 import companyAuthMiddleware from "../middlewares/companyAuthMiddleware.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
@@ -15,6 +15,8 @@ router.get("/my-interviews", userAuthMiddleware, getUserInterviews);
 router.get("/company-interviews", companyAuthMiddleware, getCompanyInterviews);
 router.get("/summary", companyAuthMiddleware, getInterviewSummary);
 router.get("/llm-info/:id", authMiddleware, getInterviewLLMDetail);
+router.post("/submit-evaluation/:id", authMiddleware, submitInterviewEvaluation);
+router.post("/status/:id", authMiddleware, updateInterviewStatus);
 
 export default router;
 

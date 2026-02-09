@@ -158,7 +158,7 @@ const Applications = () => {
             <div className="flex items-center gap-2">
               {userData?.resume ? (
                 <a
-                  href={userData.resume}
+                  href={userData.resume.startsWith("http") ? userData.resume : `${backendUrl}${userData.resume}`}
                   target="_blank"
                   className="bg-blue-100 text-blue-500 rounded px-3 py-1.5 text-sm hover:bg-blue-200 transition-colors"
                 >

@@ -317,7 +317,7 @@ const ViewApplications = () => {
                 <h3 className="text-sm font-bold text-gray-700 uppercase tracking-widest border-b pb-1">Interview Assets</h3>
                 <div className="flex flex-col gap-2">
                   <a
-                    href={selectedInterview.applicationId?.appliedResume || "#"}
+                    href={selectedInterview.applicationId?.appliedResume ? (selectedInterview.applicationId.appliedResume.startsWith("http") ? selectedInterview.applicationId.appliedResume : `${backendUrl}${selectedInterview.applicationId.appliedResume}`) : "#"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between p-3 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-100 transition-colors group"

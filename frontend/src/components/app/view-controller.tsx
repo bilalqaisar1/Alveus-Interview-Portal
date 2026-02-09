@@ -56,7 +56,7 @@ export function ViewController({ appConfig }: ViewControllerProps) {
       )}
       {/* Session view */}
       {isConnected && (
-        <MotionSessionView key="session-view" {...VIEW_MOTION_PROPS} appConfig={appConfig} />
+        <MotionSessionView key="session-view" {...VIEW_MOTION_PROPS} appConfig={appConfig} className="h-full w-full" />
       )}
     </AnimatePresence>
   );

@@ -25,6 +25,10 @@ const InterviewSession = () => {
                 });
                 if (data.success) {
                     setInterviewData(data.interviewDetail);
+                    // Mark as In Progress when details are successfully fetched
+                    await axios.post(`${backendUrl}/interview/status/${id}`, { status: "In Progress" }, {
+                        headers: { token: userToken }
+                    });
                 } else {
                     console.error("Failed to fetch interview details");
                 }
@@ -38,6 +42,15 @@ const InterviewSession = () => {
         if (id && userToken) {
             fetchInterviewDetails();
         }
+
+        return () => {
+            // Mark as Expired if user exits (Backend will ignore if already Completed)
+            if (id && userToken) {
+                axios.post(`${backendUrl}/interview/status/${id}`, { status: "Expired" }, {
+                    headers: { token: userToken }
+                }).catch(err => console.error("Error marking interview expired:", err));
+            }
+        };
     }, [id, userToken, backendUrl]);
 
     if (loading) {
@@ -168,16 +181,10 @@ const InterviewSession = () => {
                                     enableSystem
                                     disableTransitionOnChange
                                 >
-                                    <App appConfig={interviewConfig} />
-                                </ThemeProvider>
-
-                                {/* Overlay status */}
-                                <div className="absolute top-4 right-4 z-10">
-                                    <div className="bg-white/80 backdrop-blur px-3 py-1 rounded-full border border-gray-100 flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                                        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Live Session</span>
+                                    <div className="flex-grow h-full min-h-[600px]">
+                                        <App appConfig={interviewConfig} />
                                     </div>
-                                </div>
+                                </ThemeProvider>
                             </div>
                         </div>
                     </div>

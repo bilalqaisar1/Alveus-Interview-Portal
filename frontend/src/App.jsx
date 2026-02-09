@@ -23,6 +23,7 @@ import Feed from "./pages/Feed";
 import Profile from "./pages/Profile";
 import ScheduledInterviews from "./pages/ScheduledInterviews";
 import InterviewSession from "./pages/InterviewSession";
+import InterviewResults from "./pages/InterviewResults";
 import { AppContext } from "./context/AppContext";
 
 const App = () => {
@@ -41,6 +42,7 @@ const App = () => {
         <Route path="/applications" element={<Applications />} />
         <Route path="/scheduled-interviews" element={<ScheduledInterviews />} />
         <Route path="/interview-session/:id" element={<InterviewSession />} />
+        <Route path="/interview-results/:id" element={<InterviewResults />} />
         {/* <Route path="/feed" element={<Feed />} /> */}
         <Route path="/candidate-login" element={<CandidatesLogin />} />
         <Route path="/candidate-signup" element={<CandidatesSignup />} />

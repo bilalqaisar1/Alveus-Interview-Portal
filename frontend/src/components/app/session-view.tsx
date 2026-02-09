@@ -7,6 +7,7 @@ import type { AppConfig } from '@/app-config';
 import { ChatTranscript } from '@/components/app/chat-transcript';
 import { PreConnectMessage } from '@/components/app/preconnect-message';
 import { TileLayout } from '@/components/app/tile-layout';
+import { useNavigate } from 'react-router-dom';
 import {
   AgentControlBar,
   type ControlBarControls,
@@ -64,6 +65,7 @@ interface SessionViewProps {
 export const SessionView = React.forwardRef<HTMLDivElement, React.ComponentProps<'section'> & SessionViewProps>(
   ({ appConfig, ...props }, ref) => {
     const session = useSessionContext();
+    const navigate = useNavigate();
     const { messages } = useSessionMessages(session);
     const [chatOpen, setChatOpen] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -106,6 +108,27 @@ export const SessionView = React.forwardRef<HTMLDivElement, React.ComponentProps
 
         {/* Tile Layout */}
         <TileLayout chatOpen={chatOpen} />
+
+        {/* Global End Call Button (Top Right Override for prominence) */}
+        <div className="absolute top-4 right-4 z-[100] flex flex-col items-end gap-2">
+          {/* Live indicator moved here for consolidation */}
+          <div className="bg-white/90 backdrop-blur px-3 py-1 rounded-full border border-gray-100 flex items-center gap-2 shadow-sm mb-1">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Live Session</span>
+          </div>
+
+          <button
+            onClick={() => {
+              if (window.confirm("Are you sure you want to end this interview?")) {
+                session.end();
+                navigate('/scheduled-interviews');
+              }
+            }}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-xl transition-all active:scale-95 border-2 border-white/20"
+          >
+            END INTERVIEW
+          </button>
+        </div>
 
         {/* Bottom */}
         <MotionBottom

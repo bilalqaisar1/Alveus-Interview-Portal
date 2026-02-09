@@ -8,7 +8,9 @@ const interviewSchema = mongoose.Schema({
     date: { type: Number, required: true }, // Epoch timestamp
     meetLink: { type: String, default: "" },
     eventId: { type: String, default: "" }, // Google Calendar Event ID
-    status: { type: String, default: "Scheduled" }, // Scheduled, Completed, Cancelled
+    status: { type: String, default: "Scheduled" }, // Scheduled, In Progress, Completed, Cancelled, Expired
+    evaluation: { type: Object, default: null }, // Stores the AI evaluation results
+    evaluationAt: { type: Date, default: null },
 }, { timestamps: true });
 
 const Interview = mongoose.model("Interview", interviewSchema);
