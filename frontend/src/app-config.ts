@@ -17,6 +17,8 @@ export interface AppConfig {
   // for LiveKit Cloud Sandbox
   sandboxId?: string;
   agentName?: string;
+  interviewId?: string;
+  candidateName?: string;
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {

@@ -22,17 +22,21 @@ function WelcomeImage() {
 interface WelcomeViewProps {
   startButtonText: string;
   onStartCall: () => void;
+  candidateName?: string;
 }
 
 export const WelcomeView = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'> & WelcomeViewProps>(
-  ({ startButtonText, onStartCall, ...props }, ref) => {
+  ({ startButtonText, onStartCall, candidateName, ...props }, ref) => {
     return (
       <div ref={ref} {...props}>
         <section className="bg-background flex flex-col items-center justify-center text-center">
           <WelcomeImage />
 
-          <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
-            Chat live with Alveus voice AI agent
+          <h2 className="text-2xl font-bold text-foreground mb-2">
+            Hello, {candidateName || 'Candidate'}!
+          </h2>
+          <p className="text-foreground/60 max-w-prose pt-1 leading-6 font-medium">
+            Your Alveus voice AI interviewer is ready to begin.
           </p>
 
           <Button variant="primary" size="lg" onClick={onStartCall} className="mt-6 w-64 font-mono">

@@ -4,8 +4,8 @@ import { twMerge } from 'tailwind-merge';
 import { APP_CONFIG_DEFAULTS } from '@/app-config';
 import type { AppConfig } from '@/app-config';
 
-export const CONFIG_ENDPOINT = process.env.NEXT_PUBLIC_APP_CONFIG_ENDPOINT;
-export const SANDBOX_ID = process.env.SANDBOX_ID;
+export const CONFIG_ENDPOINT = import.meta.env.VITE_NEXT_PUBLIC_APP_CONFIG_ENDPOINT;
+export const SANDBOX_ID = import.meta.env.VITE_SANDBOX_ID;
 
 export interface SandboxConfig {
   [key: string]:
@@ -101,7 +101,8 @@ export function getStyles(appConfig: AppConfig) {
  */
 export function getSandboxTokenSource(appConfig: AppConfig) {
   return TokenSource.custom(async () => {
-    const url = new URL(process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT!, window.location.origin);
+    const connDetailsEndpoint = import.meta.env.VITE_NEXT_PUBLIC_CONN_DETAILS_ENDPOINT || (import.meta.env.VITE_BACKEND_URL + '/api/connection-details');
+    const url = new URL(connDetailsEndpoint, window.location.origin);
     const sandboxId = appConfig.sandboxId ?? '';
     const roomConfig = appConfig.agentName
       ? {

@@ -15,7 +15,7 @@ import { useAgentErrors } from '@/hooks/useAgentErrors';
 import { useDebugMode } from '@/hooks/useDebug';
 import { getSandboxTokenSource } from '@/lib/utils';
 
-const IN_DEVELOPMENT = process.env.NODE_ENV !== 'production';
+const IN_DEVELOPMENT = import.meta.env.DEV;
 
 function AppSetup() {
   useDebugMode({ enabled: IN_DEVELOPMENT });
@@ -30,9 +30,25 @@ interface AppProps {
 
 export function App({ appConfig }: AppProps) {
   const tokenSource = useMemo(() => {
-    return typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string'
-      ? getSandboxTokenSource(appConfig)
-      : TokenSource.endpoint('/api/connection-details');
+    if (typeof import.meta.env.VITE_NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string') {
+      return getSandboxTokenSource(appConfig);
+    }
+
+    return TokenSource.custom(async () => {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:9000';
+      const response = await fetch(`${backendUrl}/api/connection-details`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          interviewId: appConfig.interviewId,
+          room_config: appConfig.agentName ? { agents: [{ agent_name: appConfig.agentName }] } : undefined
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch connection details');
+      }
+      return response.json();
+    });
   }, [appConfig]);
 
   const session = useSession(

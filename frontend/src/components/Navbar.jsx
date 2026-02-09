@@ -37,6 +37,7 @@ const Navbar = () => {
   const candidateMenu = [
     { name: "Home", path: "/" },
     { name: "All Jobs", path: "/all-jobs/all" },
+    { name: "Interviews", path: "/scheduled-interviews" },
     { name: "AI Interview", path: "/ai-interview" },
     { name: "AI Assistant", path: "/ai-assistant" },
     { name: "About", path: "/about" },

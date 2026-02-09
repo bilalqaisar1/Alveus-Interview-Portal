@@ -21,6 +21,8 @@ import CompanySettings from "./pages/CompanySettings";
 import AIAssistant from "./pages/AIAssistant";
 import Feed from "./pages/Feed";
 import Profile from "./pages/Profile";
+import ScheduledInterviews from "./pages/ScheduledInterviews";
+import InterviewSession from "./pages/InterviewSession";
 import { AppContext } from "./context/AppContext";
 
 const App = () => {
@@ -37,6 +39,8 @@ const App = () => {
         <Route path="/ai-assistant" element={<AIAssistant />} />
         <Route path="/apply-job/:id" element={<ApplyJob />} />
         <Route path="/applications" element={<Applications />} />
+        <Route path="/scheduled-interviews" element={<ScheduledInterviews />} />
+        <Route path="/interview-session/:id" element={<InterviewSession />} />
         {/* <Route path="/feed" element={<Feed />} /> */}
         <Route path="/candidate-login" element={<CandidatesLogin />} />
         <Route path="/candidate-signup" element={<CandidatesSignup />} />

@@ -1,6 +1,6 @@
 import axios from "axios";
 import kConverter from "k-convert";
-import { Clock, MapPin, User, CalendarDays, Video } from "lucide-react";
+import { Clock, MapPin, User, Video } from "lucide-react";
 import moment from "moment";
 import React, { useContext, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -17,12 +17,8 @@ const ApplyJob = () => {
   const [jobData, setJobData] = useState(null);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [noSimilarJobs, setNoSimilarJobs] = useState(false);
-  const [showSlotModal, setShowSlotModal] = useState(false);
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [selectedResume, setSelectedResume] = useState(null);
-  const [recommendedSlots, setRecommendedSlots] = useState([]);
-  const [selectedSlot, setSelectedSlot] = useState(null);
-  const [customSlot, setCustomSlot] = useState("");
   const [scheduling, setScheduling] = useState(false);
 
   const navigate = useNavigate();
@@ -38,19 +34,6 @@ const ApplyJob = () => {
     fetchUserApplication,
   } = useContext(AppContext);
 
-  const fetchRecommendedSlots = async () => {
-    try {
-      const { data } = await axios.get(
-        `${backendUrl}/interview/recommended-slots?jobId=${jobData?._id}`,
-        { headers: { token: userToken } }
-      );
-      if (data.success) {
-        setRecommendedSlots(data.slots);
-      }
-    } catch (error) {
-      console.error("Error fetching slots:", error);
-    }
-  };
 
   const handleApplyClick = async () => {
     if (!userData) {
@@ -64,9 +47,8 @@ const ApplyJob = () => {
   const handleResumeSelected = async (resumePath) => {
     setSelectedResume(resumePath);
     setShowResumeModal(false);
-    // Now fetch recommended slots and show slot modal
-    await fetchRecommendedSlots();
-    setShowSlotModal(true);
+    // Directly schedule the interview for current time
+    await handleScheduleInterview();
   };
 
   const applyJob = async (jobId) => {
@@ -94,10 +76,7 @@ const ApplyJob = () => {
   };
 
   const handleScheduleInterview = async () => {
-    const slotTime = selectedSlot || (customSlot ? new Date(customSlot).getTime() : null);
-    if (!slotTime) {
-      return toast.error("Please select an interview slot");
-    }
+    const slotTime = Date.now();
 
     setScheduling(true);
     try {
@@ -119,7 +98,7 @@ const ApplyJob = () => {
         toast.success("Application submitted & Interview scheduled!");
         fetchUserApplication();
         setAlreadyApplied(true);
-        setShowSlotModal(false);
+        // setShowSlotModal(false); // Removed
       } else {
         toast.error(data.message || "Failed to schedule interview");
       }
@@ -289,80 +268,6 @@ const ApplyJob = () => {
         currentResume={userData?.resume}
       />
 
-      {/* Interview Slot Selection Modal */}
-      {showSlotModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-blue-100 rounded-full">
-                <CalendarDays className="text-blue-600" size={24} />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">Schedule Interview</h2>
-                <p className="text-sm text-gray-500">Select your preferred interview slot</p>
-              </div>
-            </div>
-
-            {/* Recommended Slots */}
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Recommended Slots</h3>
-              <div className="space-y-2">
-                {recommendedSlots.map((slot, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => { setSelectedSlot(slot); setCustomSlot(""); }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg border transition ${selectedSlot === slot
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-blue-300"
-                      }`}
-                  >
-                    <Video className="text-blue-500" size={18} />
-                    <span className="text-sm text-gray-700">
-                      {moment(slot).format("dddd, MMMM D, YYYY [at] h:mm A")}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom Slot */}
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Or choose your own time</h3>
-              <input
-                type="datetime-local"
-                className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={customSlot}
-                onChange={(e) => { setCustomSlot(e.target.value); setSelectedSlot(null); }}
-                min={moment().add(1, 'day').format("YYYY-MM-DDTHH:mm")}
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowSlotModal(false)}
-                className="flex-1 py-2.5 px-4 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleScheduleInterview}
-                disabled={scheduling}
-                className="flex-1 py-2.5 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {scheduling ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Scheduling...
-                  </>
-                ) : (
-                  "Confirm & Apply"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
