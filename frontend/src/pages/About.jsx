@@ -17,7 +17,7 @@ const About = () => {
         {/* About Section */}
         <div className="mt-16">
           <h1 className="text-3xl md:text-4xl font-semibold mb-8 text-center text-gray-700">
-            About Superio
+            About Alveus
           </h1>
           <div className="max-w-4xl text-center mx-auto space-y-6 text-gray-600">
             <motion.p

@@ -189,7 +189,7 @@ const Feed = () => {
                                     {activeData?.name || "Guest User"}
                                 </Link>
                                 <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                                    {activeData?.headline || "Welcome to Superio Professional Network"}
+                                    {activeData?.headline || "Welcome to Alveus Professional Network"}
                                 </p>
                             </div>
                         </div>

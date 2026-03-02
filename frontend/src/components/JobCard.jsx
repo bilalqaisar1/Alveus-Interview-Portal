@@ -29,6 +29,10 @@ const JobCard = ({ job }) => {
             : assets.company_icon
         }
         alt={`${job.companyId?.name || "Company"} Logo`}
+        onError={(e) => {
+          e.currentTarget.onerror = null;
+          e.currentTarget.src = assets.company_icon;
+        }}
       />
       <div className="flex-1">
         <h1 className="text-xl text-gray-700 font-semibold mb-1">

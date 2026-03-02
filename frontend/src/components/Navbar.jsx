@@ -38,8 +38,6 @@ const Navbar = () => {
     { name: "Home", path: "/" },
     { name: "All Jobs", path: "/all-jobs/all" },
     { name: "Interviews", path: "/scheduled-interviews" },
-    { name: "AI Interview", path: "/ai-interview" },
-    { name: "AI Assistant", path: "/ai-assistant" },
     { name: "About", path: "/about" },
   ];
 
@@ -192,6 +190,7 @@ const Navbar = () => {
                     }
                     alt="Profile"
                     onError={(e) => {
+                      e.currentTarget.onerror = null; // Prevent infinite loop
                       e.currentTarget.src = assets.avatarPlaceholder;
                     }}
                   />
@@ -280,7 +279,7 @@ const Navbar = () => {
         <div className="relative flex flex-col w-4/5 max-w-sm h-full bg-white border-r border-r-gray-200">
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <Link to="/" onClick={toggleMenu}>
-              <img className="h-8" src={assets.logo} alt="Lecruiter Logo" />
+              <img className="h-8" src={assets.logo} alt="Alveus Logo" />
             </Link>
             <button
               onClick={toggleMenu}
@@ -327,6 +326,7 @@ const Navbar = () => {
                     }
                     alt="Profile"
                     onError={(e) => {
+                      e.currentTarget.onerror = null;
                       e.currentTarget.src = assets.avatarPlaceholder;
                     }}
                   />

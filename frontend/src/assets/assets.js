@@ -77,6 +77,7 @@ export const assets = {
   person_tick_icon,
   resume_download_icon,
   profile_img,
+  avatarPlaceholder: profile_img,
   delete_icon,
   profile_upload_icon,
   email_icon,

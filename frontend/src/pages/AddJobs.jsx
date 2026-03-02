@@ -98,7 +98,7 @@ const AddJob = () => {
   }, []);
 
   useEffect(() => {
-    document.title = "Superio - Job Portal | Dashboard";
+    document.title = "Alveus - Job Portal | Dashboard";
   }, []);
 
   const handleCountryChange = (code, name) => {

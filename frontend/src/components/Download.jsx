@@ -23,7 +23,7 @@ const Download = () => {
             whileInView="visible"
             className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight"
           >
-            Get the Superio <span className="text-blue-600">Job Search</span>{" "}
+            Get the Alveus <span className="text-blue-600">Job Search</span>{" "}
             App
           </motion.h1>
           <motion.p
@@ -67,7 +67,7 @@ const Download = () => {
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ stiffness: 90, delay: 0.1 }}
             src={assets.download_image}
-            alt="Superio App Preview"
+            alt="Alveus App Preview"
             className="w-full max-w-md lg:max-w-none h-auto object-contain"
           />
         </div>

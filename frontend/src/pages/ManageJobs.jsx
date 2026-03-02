@@ -212,7 +212,7 @@ const ManageJobs = () => {
   }, []);
 
   useEffect(() => {
-    document.title = "Superio - Job Portal | Dashboard";
+    document.title = "Alveus - Job Portal | Dashboard";
   }, []);
 
   // Update countdown every minute
